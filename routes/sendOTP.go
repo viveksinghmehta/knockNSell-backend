@@ -28,6 +28,24 @@ func get6DigitNumber() string {
 	return strconv.FormatInt(code, 10)
 }
 
+func twillioClient(phone, message string) (*openApi.ApiV2010Message, error) {
+	sid := os.Getenv("TWILIO_ACCOUNT_SID")
+	password := os.Getenv("TWILIO_AUTH_TOKEN")
+
+	client := twilio.NewRestClientWithParams(twilio.ClientParams{
+		Username: sid,
+		Password: password,
+	})
+
+	params := &openApi.CreateMessageParams{}
+	countryCode := "+91"
+	params.SetFrom("+19786984267")    // Your Twilio phone number
+	params.SetTo(countryCode + phone) // Recipient's phone number
+	params.SetBody(message)
+
+	return client.Api.CreateMessage(params)
+}
+
 func Sendotp(c *gin.Context) {
 	var payload PhoneModel
 
@@ -41,21 +59,7 @@ func Sendotp(c *gin.Context) {
 	code := get6DigitNumber()
 	messageBody := "Your 6 digit code is: " + code + ". Please do not share it."
 
-	sid := os.Getenv("TWILIO_ACCOUNT_SID")
-	password := os.Getenv("TWILIO_AUTH_TOKEN")
-
-	client := twilio.NewRestClientWithParams(twilio.ClientParams{
-		Username: sid,
-		Password: password,
-	})
-
-	params := &openApi.CreateMessageParams{}
-	countryCode := "+91"
-	params.SetFrom("+19786984267")                  // Your Twilio phone number
-	params.SetTo(countryCode + payload.PhoneNumber) // Recipient's phone number
-	params.SetBody(messageBody)
-
-	resp, error := client.Api.CreateMessage(params)
+	resp, error := twillioClient(payload.PhoneNumber, messageBody)
 	if error != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error": error.Error(),
