@@ -1,0 +1,30 @@
+version: "2"
+
+# Global type overrides
+overrides:
+  go:
+    overrides:
+      # Map Postgres enum types to Go string (or custom enum type)
+      - db_type: "account_type_enum"
+        go_type:
+          type: "string"
+      - db_type: "gender_enum"
+        go_type:
+          type: "string"
+      # Map CHAR(6)[] to []string
+      - db_type: "char(6)[]"
+        go_type:
+          type: "[]string"
+
+sql:
+  - engine: "postgresql"
+    schema:
+      - "db/schema/schema.sql"
+    queries:
+      - "db/queries/*.sql"
+    gen:
+      go:
+        out: "db/gen"
+        package: "db"
+        emit_json_tags: true
+        emit_prepared_queries: true

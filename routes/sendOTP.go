@@ -57,7 +57,7 @@ func Sendotp(c *gin.Context) {
 	}
 
 	code := get6DigitNumber()
-	messageBody := "Your 6 digit code is: " + code + ". Please do not share it."
+	messageBody := "Your Knock & Sell 6 digit code is: " + code + ". Please do not share it."
 
 	resp, error := twillioClient(payload.PhoneNumber, messageBody)
 	if error != nil {
