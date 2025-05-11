@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type AccountTypeEnum string
@@ -132,11 +133,11 @@ type FlyerPrintDetail struct {
 }
 
 type OtpVerification struct {
-	ID          uuid.UUID    `json:"id"`
-	PhoneNumber string       `json:"phone_number"`
-	Otp         []string     `json:"otp"`
-	CreatedAt   sql.NullTime `json:"created_at"`
-	UpdatedAt   sql.NullTime `json:"updated_at"`
+	ID          uuid.UUID      `json:"id"`
+	PhoneNumber string         `json:"phone_number"`
+	Otp         pq.StringArray `json:"otp"`
+	CreatedAt   sql.NullTime   `json:"created_at"`
+	UpdatedAt   sql.NullTime   `json:"updated_at"`
 }
 
 type User struct {

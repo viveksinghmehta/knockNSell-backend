@@ -12,9 +12,10 @@ overrides:
         go_type:
           type: "string"
       # Map CHAR(6)[] to []string
-      - db_type: "char(6)[]"
+      - column: "otp_verification.otp"
         go_type:
-          type: "[]string"
+          import: "github.com/lib/pq"
+          type: "StringArray"
 
 sql:
   - engine: "postgresql"
