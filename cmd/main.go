@@ -2,7 +2,12 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	db "knockNSell/db/gen"
 	"knockNSell/routes"
+	"log"
+	"os"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -12,10 +17,27 @@ import (
 )
 
 var ginLambda *ginadapter.GinLambdaV2
+var queries *db.Queries
 
 func init() {
+	// 1. Open the database once (Lambda warm starts reuse this)
+	dsn := os.Getenv("DATABASE_URL")
+	sqldb, err := sql.Open("postgres", dsn)
+	if err != nil {
+		log.Fatalf("failed to open DB: %v", err)
+	}
+	sqldb.SetMaxOpenConns(25)
+	sqldb.SetMaxIdleConns(5)
+	sqldb.SetConnMaxLifetime(5 * time.Minute)
+
+	// 2. Instantiate sqlc queries
+	queries = db.New(sqldb)
+
+	// 3. Wire up Gin with your handlers
 	router := gin.Default()
-	router.POST("/sendotp", routes.Sendotp)
+	server := routes.NewServer(queries)
+	router.GET("/ping", routes.PingServer)
+	router.POST("/sendotp", server.Sendotp)
 	ginLambda = ginadapter.NewV2(router)
 }
 
