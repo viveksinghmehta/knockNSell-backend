@@ -69,8 +69,8 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.updateFlyerOrderStatusStmt, err = db.PrepareContext(ctx, updateFlyerOrderStatus); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateFlyerOrderStatus: %w", err)
 	}
-	if q.upsertOTPStmt, err = db.PrepareContext(ctx, upsertOTP); err != nil {
-		return nil, fmt.Errorf("error preparing query UpsertOTP: %w", err)
+	if q.upsertOtpVerificationStmt, err = db.PrepareContext(ctx, upsertOtpVerification); err != nil {
+		return nil, fmt.Errorf("error preparing query UpsertOtpVerification: %w", err)
 	}
 	return &q, nil
 }
@@ -152,9 +152,9 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing updateFlyerOrderStatusStmt: %w", cerr)
 		}
 	}
-	if q.upsertOTPStmt != nil {
-		if cerr := q.upsertOTPStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing upsertOTPStmt: %w", cerr)
+	if q.upsertOtpVerificationStmt != nil {
+		if cerr := q.upsertOtpVerificationStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing upsertOtpVerificationStmt: %w", cerr)
 		}
 	}
 	return err
@@ -211,7 +211,7 @@ type Queries struct {
 	listPrintDetailsByOrderStmt  *sql.Stmt
 	listUsersStmt                *sql.Stmt
 	updateFlyerOrderStatusStmt   *sql.Stmt
-	upsertOTPStmt                *sql.Stmt
+	upsertOtpVerificationStmt    *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
@@ -233,6 +233,6 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		listPrintDetailsByOrderStmt:  q.listPrintDetailsByOrderStmt,
 		listUsersStmt:                q.listUsersStmt,
 		updateFlyerOrderStatusStmt:   q.updateFlyerOrderStatusStmt,
-		upsertOTPStmt:                q.upsertOTPStmt,
+		upsertOtpVerificationStmt:    q.upsertOtpVerificationStmt,
 	}
 }
