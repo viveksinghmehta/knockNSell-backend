@@ -21,7 +21,7 @@ var ginLambda *ginadapter.GinLambdaV2
 var queries *db.Queries
 
 func init() {
-
+	// Only for development remove it in PROD
 	mode := os.Getenv("GIN_MODE")
 
 	if mode == "debug" {
@@ -50,6 +50,7 @@ func init() {
 		server := routes.NewServer(queries)
 		router.GET("/ping", routes.PingServer)
 		router.POST("/sendotp", server.Sendotp)
+		router.POST("/verifyotp", server.VerifyOTP)
 		ginLambda = ginadapter.NewV2(router)
 	}
 }
@@ -65,6 +66,7 @@ func main() {
 		server := routes.NewServer(queries)
 		router.GET("/ping", routes.PingServer)
 		router.POST("/sendotp", server.Sendotp)
+		router.POST("/verifyotp", server.VerifyOTP)
 		router.Run()
 	} else {
 		lambda.Start(handleRequest) // start Lambda :contentReference[oaicite:9]{index=9}
