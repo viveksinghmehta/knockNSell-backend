@@ -73,9 +73,9 @@ func (s *Server) Sendotp(c *gin.Context) {
 		} else {
 			log.Println(*resp.Sid)
 		}
-		dbResponse, error := s.q.UpsertOTP(c.Request.Context(), db.UpsertOTPParams{
+		dbResponse, error := s.q.UpsertOtpVerification(c.Request.Context(), db.UpsertOtpVerificationParams{
 			PhoneNumber: payload.PhoneNumber,
-			Otp:         []string{code},
+			Otp:         code,
 		})
 		if error != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -86,6 +86,7 @@ func (s *Server) Sendotp(c *gin.Context) {
 		} else {
 			c.JSON(200, gin.H{
 				"status":       resp.Status,
+				"code":         code,
 				"date_created": resp.DateCreated,
 				"phone":        resp.To,
 				"date_updated": resp.DateUpdated,
