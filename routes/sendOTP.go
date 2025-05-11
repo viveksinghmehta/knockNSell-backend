@@ -8,6 +8,8 @@ import (
 	"os"
 	"strconv"
 
+	db "knockNSell/db/gen"
+
 	"github.com/gin-gonic/gin"
 	"github.com/twilio/twilio-go"
 	openApi "github.com/twilio/twilio-go/rest/api/v2010"
@@ -46,7 +48,7 @@ func twillioClient(phone, message string) (*openApi.ApiV2010Message, error) {
 	return client.Api.CreateMessage(params)
 }
 
-func Sendotp(c *gin.Context) {
+func (s *Server) Sendotp(c *gin.Context) {
 	var payload PhoneModel
 
 	if error := c.ShouldBindJSON(&payload); error != nil {
@@ -71,13 +73,26 @@ func Sendotp(c *gin.Context) {
 		} else {
 			log.Println(*resp.Sid)
 		}
-		c.JSON(200, gin.H{
-			"status":       resp.Status,
-			"date_created": resp.DateCreated,
-			"phone":        resp.To,
-			"date_updated": resp.DateUpdated,
-			"message":      "OTP send successfully",
+		dbResponse, error := s.q.UpsertOTP(c.Request.Context(), db.UpsertOTPParams{
+			PhoneNumber: payload.PhoneNumber,
+			Otp:         []string{code},
 		})
+		if error != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+				"db message": error.Error(),
+				"message":    "Can't enter OTP to the database",
+			})
+			return
+		} else {
+			c.JSON(200, gin.H{
+				"status":       resp.Status,
+				"date_created": resp.DateCreated,
+				"phone":        resp.To,
+				"date_updated": resp.DateUpdated,
+				"message":      "OTP send successfully",
+				"db message":   dbResponse.ID,
+			})
+		}
 	}
 
 }

@@ -11,32 +11,6 @@ import (
 	"github.com/lib/pq"
 )
 
-const createOTPVerification = `-- name: CreateOTPVerification :one
-
-INSERT INTO otp_verification (phone_number, otp)
-VALUES ($1, $2)
-RETURNING id, phone_number, otp, created_at, updated_at
-`
-
-type CreateOTPVerificationParams struct {
-	PhoneNumber string   `json:"phone_number"`
-	Otp         []string `json:"otp"`
-}
-
-// db/queries/otp_verification.sql
-func (q *Queries) CreateOTPVerification(ctx context.Context, arg CreateOTPVerificationParams) (OtpVerification, error) {
-	row := q.queryRow(ctx, q.createOTPVerificationStmt, createOTPVerification, arg.PhoneNumber, pq.Array(arg.Otp))
-	var i OtpVerification
-	err := row.Scan(
-		&i.ID,
-		&i.PhoneNumber,
-		pq.Array(&i.Otp),
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
 const deleteOTPByPhoneNumber = `-- name: DeleteOTPByPhoneNumber :exec
 DELETE FROM otp_verification
 WHERE phone_number = $1
@@ -107,18 +81,41 @@ func (q *Queries) ListOTPVerifications(ctx context.Context, arg ListOTPVerificat
 	return items, nil
 }
 
-const updateOTP = `-- name: UpdateOTP :exec
-UPDATE otp_verification
-SET otp = $2
-WHERE phone_number = $1
+const upsertOTP = `-- name: UpsertOTP :one
+
+INSERT INTO otp_verification (phone_number, otp)
+VALUES (
+  $1,
+  ARRAY[$2]::CHAR(6)[]
+)
+ON CONFLICT (phone_number) DO UPDATE
+SET
+  otp        = array_append(otp_verification.otp, $2),
+  updated_at = CURRENT_TIMESTAMP
+WHERE array_length(otp_verification.otp, 1) < 10
+RETURNING
+  otp_verification.id,
+  otp_verification.phone_number,
+  otp_verification.otp,
+  otp_verification.created_at,
+  otp_verification.updated_at
 `
 
-type UpdateOTPParams struct {
+type UpsertOTPParams struct {
 	PhoneNumber string   `json:"phone_number"`
 	Otp         []string `json:"otp"`
 }
 
-func (q *Queries) UpdateOTP(ctx context.Context, arg UpdateOTPParams) error {
-	_, err := q.exec(ctx, q.updateOTPStmt, updateOTP, arg.PhoneNumber, pq.Array(arg.Otp))
-	return err
+// db/queries/otp_verification.sql
+func (q *Queries) UpsertOTP(ctx context.Context, arg UpsertOTPParams) (OtpVerification, error) {
+	row := q.queryRow(ctx, q.upsertOTPStmt, upsertOTP, arg.PhoneNumber, pq.Array(arg.Otp))
+	var i OtpVerification
+	err := row.Scan(
+		&i.ID,
+		&i.PhoneNumber,
+		pq.Array(&i.Otp),
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

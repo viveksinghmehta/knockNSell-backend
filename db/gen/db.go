@@ -30,9 +30,6 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.createFlyerOrderStmt, err = db.PrepareContext(ctx, createFlyerOrder); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateFlyerOrder: %w", err)
 	}
-	if q.createOTPVerificationStmt, err = db.PrepareContext(ctx, createOTPVerification); err != nil {
-		return nil, fmt.Errorf("error preparing query CreateOTPVerification: %w", err)
-	}
 	if q.createPrintDetailStmt, err = db.PrepareContext(ctx, createPrintDetail); err != nil {
 		return nil, fmt.Errorf("error preparing query CreatePrintDetail: %w", err)
 	}
@@ -72,8 +69,8 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.updateFlyerOrderStatusStmt, err = db.PrepareContext(ctx, updateFlyerOrderStatus); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateFlyerOrderStatus: %w", err)
 	}
-	if q.updateOTPStmt, err = db.PrepareContext(ctx, updateOTP); err != nil {
-		return nil, fmt.Errorf("error preparing query UpdateOTP: %w", err)
+	if q.upsertOTPStmt, err = db.PrepareContext(ctx, upsertOTP); err != nil {
+		return nil, fmt.Errorf("error preparing query UpsertOTP: %w", err)
 	}
 	return &q, nil
 }
@@ -88,11 +85,6 @@ func (q *Queries) Close() error {
 	if q.createFlyerOrderStmt != nil {
 		if cerr := q.createFlyerOrderStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createFlyerOrderStmt: %w", cerr)
-		}
-	}
-	if q.createOTPVerificationStmt != nil {
-		if cerr := q.createOTPVerificationStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing createOTPVerificationStmt: %w", cerr)
 		}
 	}
 	if q.createPrintDetailStmt != nil {
@@ -160,9 +152,9 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing updateFlyerOrderStatusStmt: %w", cerr)
 		}
 	}
-	if q.updateOTPStmt != nil {
-		if cerr := q.updateOTPStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing updateOTPStmt: %w", cerr)
+	if q.upsertOTPStmt != nil {
+		if cerr := q.upsertOTPStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing upsertOTPStmt: %w", cerr)
 		}
 	}
 	return err
@@ -206,7 +198,6 @@ type Queries struct {
 	tx                           *sql.Tx
 	createDistributionDetailStmt *sql.Stmt
 	createFlyerOrderStmt         *sql.Stmt
-	createOTPVerificationStmt    *sql.Stmt
 	createPrintDetailStmt        *sql.Stmt
 	createUserStmt               *sql.Stmt
 	deleteOTPByPhoneNumberStmt   *sql.Stmt
@@ -220,7 +211,7 @@ type Queries struct {
 	listPrintDetailsByOrderStmt  *sql.Stmt
 	listUsersStmt                *sql.Stmt
 	updateFlyerOrderStatusStmt   *sql.Stmt
-	updateOTPStmt                *sql.Stmt
+	upsertOTPStmt                *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
@@ -229,7 +220,6 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		tx:                           tx,
 		createDistributionDetailStmt: q.createDistributionDetailStmt,
 		createFlyerOrderStmt:         q.createFlyerOrderStmt,
-		createOTPVerificationStmt:    q.createOTPVerificationStmt,
 		createPrintDetailStmt:        q.createPrintDetailStmt,
 		createUserStmt:               q.createUserStmt,
 		deleteOTPByPhoneNumberStmt:   q.deleteOTPByPhoneNumberStmt,
@@ -243,6 +233,6 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		listPrintDetailsByOrderStmt:  q.listPrintDetailsByOrderStmt,
 		listUsersStmt:                q.listUsersStmt,
 		updateFlyerOrderStatusStmt:   q.updateFlyerOrderStatusStmt,
-		updateOTPStmt:                q.updateOTPStmt,
+		upsertOTPStmt:                q.upsertOTPStmt,
 	}
 }
