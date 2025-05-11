@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
@@ -21,9 +22,13 @@ var queries *db.Queries
 
 func init() {
 
-	// Only for development remove it in PROD
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+	mode := os.Getenv("GIN_MODE")
+
+	if mode == "debug" {
+		// Only for development remove it in PROD
+		if err := godotenv.Load(); err != nil {
+			log.Fatalf("Error loading .env file: %v", err)
+		}
 	}
 
 	// 1. Open the database once (Lambda warm starts reuse this)
@@ -39,13 +44,14 @@ func init() {
 	// 2. Instantiate sqlc queries
 	queries = db.New(sqldb)
 
-	// 3. Wire up Gin with your handlers
-	// Commented the code to run in development
-	// router := gin.Default()
-	// server := routes.NewServer(queries)
-	// router.GET("/ping", routes.PingServer)
-	// router.POST("/sendotp", server.Sendotp)
-	// ginLambda = ginadapter.NewV2(router)
+	if mode == "release" {
+		// 3. Wire up Gin with your handlers
+		router := gin.Default()
+		server := routes.NewServer(queries)
+		router.GET("/ping", routes.PingServer)
+		router.POST("/sendotp", server.Sendotp)
+		ginLambda = ginadapter.NewV2(router)
+	}
 }
 
 func handleRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
@@ -53,11 +59,14 @@ func handleRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest) (eve
 }
 
 func main() {
-	// Commented this code for Development
-	// lambda.Start(handleRequest) // start Lambda :contentReference[oaicite:9]{index=9}
-	router := gin.Default()
-	server := routes.NewServer(queries)
-	router.GET("/ping", routes.PingServer)
-	router.POST("/sendotp", server.Sendotp)
-	router.Run()
+	mode := os.Getenv("GIN_MODE")
+	if mode == "debug" {
+		router := gin.Default()
+		server := routes.NewServer(queries)
+		router.GET("/ping", routes.PingServer)
+		router.POST("/sendotp", server.Sendotp)
+		router.Run()
+	} else {
+		lambda.Start(handleRequest) // start Lambda :contentReference[oaicite:9]{index=9}
+	}
 }
