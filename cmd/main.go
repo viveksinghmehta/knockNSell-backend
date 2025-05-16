@@ -22,14 +22,17 @@ var queries *db.Queries
 
 func init() {
 	// Only for development remove it in PROD
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
 	mode := os.Getenv("GIN_MODE")
 
-	if mode == "debug" {
-		// Only for development remove it in PROD
-		if err := godotenv.Load(); err != nil {
-			log.Fatalf("Error loading .env file: %v", err)
-		}
-	}
+	// if mode == "debug" {
+	// 	// Only for development remove it in PROD
+	// 	if err := godotenv.Load(); err != nil {
+	// 		log.Fatalf("Error loading .env file: %v", err)
+	// 	}
+	// }
 
 	// 1. Open the database once (Lambda warm starts reuse this)
 	dsn := os.Getenv("DATABASE_URL")
@@ -51,6 +54,8 @@ func init() {
 		router.GET("/ping", routes.PingServer)
 		router.POST("/sendotp", server.Sendotp)
 		router.POST("/verifyotp", server.VerifyOTP)
+		router.POST("/login", server.LoginUser)
+		router.POST("/signup", server.SignUpUser)
 		ginLambda = ginadapter.NewV2(router)
 	}
 }
@@ -67,6 +72,8 @@ func main() {
 		router.GET("/ping", routes.PingServer)
 		router.POST("/sendotp", server.Sendotp)
 		router.POST("/verifyotp", server.VerifyOTP)
+		router.POST("/login", server.LoginUser)
+		router.POST("/signup", server.SignUpUser)
 		router.Run()
 	} else {
 		lambda.Start(handleRequest) // start Lambda :contentReference[oaicite:9]{index=9}
