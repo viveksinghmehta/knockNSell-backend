@@ -35,7 +35,7 @@ func (s *Server) VerifyOTP(c *gin.Context) {
 	if error != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"db message": error.Error(),
-			"message":    "Can't get value of " + payload.PhoneNumber + " from the server",
+			"message":    "Can't find " + payload.PhoneNumber + " in the server",
 		})
 		return
 	} else {
