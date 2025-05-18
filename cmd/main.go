@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 
 	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 	log "github.com/sirupsen/logrus"
@@ -41,7 +40,7 @@ func setUpRouterAndLogger(environment string) *gin.Engine {
 	log.SetFormatter(&log.JSONFormatter{})
 
 	// Set up Logflare hook (replace with your Source ID and API Key)
-	logflareHook := helper.NewLogflareHook(os.Getenv("LOGFLARE_API_KEY"), os.Getenv("lOGFLARE_SOURCE_ID"))
+	logflareHook := helper.NewLogflareHook(os.Getenv("LOGFLARE_API_KEY"), os.Getenv("LOGFLARE_SOURCE_ID"))
 	log.AddHook(logflareHook)
 	// 3. Wire up Gin with your handlers
 	router := gin.New()
@@ -65,18 +64,12 @@ func setUpRouterAndLogger(environment string) *gin.Engine {
 }
 
 func init() {
-	// Only for development remove it in PROD
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
-
 	// Use this to get the mode :- release/debug
 	mode := os.Getenv("GIN_MODE")
 
 	initDB()
 
 	if mode == "release" {
-
 		router := setUpRouterAndLogger("PROD")
 		server := routes.NewServer(queries)
 		router.GET("/ping", routes.PingServer)

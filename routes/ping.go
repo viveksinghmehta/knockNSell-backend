@@ -8,6 +8,6 @@ import (
 )
 
 func PingServer(c *gin.Context) {
-	log.Infof("Request sent to the server :Ping")
+	log.Info("Request sent to the server :Ping")
 	c.Status(http.StatusOK)
 }
