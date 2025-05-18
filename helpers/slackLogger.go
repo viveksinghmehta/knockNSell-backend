@@ -4,21 +4,28 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
 
 // SlackHook is a Logrus hook to send error logs to Slack
 type SlackHook struct {
-	WebhookURL string
+	WebhookURL  string
+	AppName     string // Optional: for custom app name field
+	Environment string // Optional: for custom environment field
 }
 
 // NewSlackHook creates a new Slack hook
-func NewSlackHook(webhookURL string) *SlackHook {
+func NewSlackHook(webhookURL, appName, environment string) *SlackHook {
 	return &SlackHook{
-		WebhookURL: webhookURL,
+		WebhookURL:  webhookURL,
+		AppName:     appName,
+		Environment: environment,
 	}
 }
 
@@ -33,17 +40,27 @@ func (hook *SlackHook) Fire(entry *log.Entry) error {
 	fields := []map[string]string{
 		{
 			"title": "Level",
-			"value": entry.Level.String(),
+			"value": strings.ToUpper(entry.Level.String()),
 			"short": "true",
 		},
 		{
 			"title": "Timestamp",
-			"value": entry.Time.Format(time.RFC3339),
+			"value": entry.Time.Format(time.RFC850),
+			"short": "true",
+		},
+		{
+			"title": "App",
+			"value": hook.AppName,
+			"short": "true",
+		},
+		{
+			"title": "Environment",
+			"value": hook.Environment,
 			"short": "true",
 		},
 	}
 
-	// Add custom fields from entry.Data
+	// Add all fields from entry.Data
 	for key, value := range entry.Data {
 		fields = append(fields, map[string]string{
 			"title": key,
@@ -92,4 +109,19 @@ func (hook *SlackHook) Fire(entry *log.Entry) error {
 	}
 
 	return nil
+}
+
+func GetExtraFieldsForSlackLog(c *gin.Context, startTime time.Time) log.Fields {
+	body, _ := io.ReadAll(c.Request.Body)
+
+	duration := time.Since(startTime)
+	return log.Fields{
+		"Path":        c.Request.URL.Path,
+		"Status code": http.StatusOK,
+		"IP address":  c.Request.RemoteAddr,
+		"Method":      c.Request.Method,
+		"Duration":    duration,
+		"Host":        c.Request.Host,
+		"Body":        body,
+	}
 }

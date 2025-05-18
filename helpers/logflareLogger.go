@@ -31,12 +31,28 @@ func (hook *LogflareHook) Levels() []log.Level {
 
 // Fire sends the log entry to Logflare
 func (hook *LogflareHook) Fire(entry *log.Entry) error {
+
+	// Determine color based on log level
+	var color string
+	switch entry.Level {
+	case log.InfoLevel:
+		color = "#00FF00" // Green
+	case log.ErrorLevel:
+		color = "#FF0000" // Red
+	case log.WarnLevel:
+		color = "#FFA500" // Orange
+	case log.DebugLevel:
+		color = "#0000FF" // Blue
+	default:
+		color = "#FFFFFF" // White for other levels (e.g., trace)
+	}
 	// Prepare the log payload
 	payload := map[string]interface{}{
 		"message": entry.Message,
 		"metadata": map[string]interface{}{
-			"level":     entry.Level.String(),
-			"timestamp": entry.Time.Format(time.RFC3339),
+			"Level":     entry.Level.String(),
+			"Timestamp": entry.Time.Format(time.RFC850),
+			"color":     color,
 			"fields":    entry.Data,
 		},
 	}

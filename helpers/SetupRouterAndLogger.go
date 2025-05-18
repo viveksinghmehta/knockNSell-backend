@@ -16,7 +16,7 @@ func SetUpRouterAndLogger(environment string) *gin.Engine {
 	logflareHook := NewLogflareHook(os.Getenv("LOGFLARE_API_KEY"), os.Getenv("LOGFLARE_SOURCE_ID"))
 
 	// Set up Slack hook
-	slackHook := NewSlackHook(os.Getenv("SLACK_WEBHOOK_URL"))
+	slackHook := NewSlackHook(os.Getenv("SLACK_WEBHOOK_URL"), "KnockNSell", environment)
 	log.AddHook(slackHook)
 
 	log.AddHook(logflareHook)
@@ -29,12 +29,12 @@ func SetUpRouterAndLogger(environment string) *gin.Engine {
 		c.Next()
 		duration := time.Since(start)
 		log.WithFields(log.Fields{
-			"method":      c.Request.Method,
-			"path":        c.Request.URL.Path,
-			"status":      c.Writer.Status(),
-			"duration":    duration.String(),
-			"environment": environment,
-			"ip":          c.ClientIP(),
+			"Method":      c.Request.Method,
+			"Path":        c.Request.URL.Path,
+			"Status":      c.Writer.Status(),
+			"Duration":    duration.String(),
+			"Environment": environment,
+			"IP address":  c.Request.RemoteAddr,
 		}).Info("Request completed")
 	})
 	router.Use(gin.Recovery())

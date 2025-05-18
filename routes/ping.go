@@ -2,6 +2,9 @@ package routes
 
 import (
 	"net/http"
+	"time"
+
+	helper "knockNSell/helpers"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -13,9 +16,10 @@ func PingServer(c *gin.Context) {
 }
 
 func SendError(c *gin.Context) {
+	start := time.Now()
 	c.JSON(http.StatusOK, gin.H{
 		"status":  400,
 		"message": "successfully send an Error.",
 	})
-	log.Error("Saved the error log.")
+	log.WithFields(helper.GetExtraFieldsForSlackLog(c, start)).Error("Check the error 🚨")
 }
