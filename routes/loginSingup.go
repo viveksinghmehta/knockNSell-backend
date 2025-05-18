@@ -4,17 +4,23 @@ import (
 	db "knockNSell/db/gen"
 	"net/http"
 	"strings"
+	"time"
+
+	helper "knockNSell/helpers"
 
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 )
 
 func (s *Server) LoginUser(c *gin.Context) {
 	var payload PhoneModel
+	start := time.Now()
 
 	if error := c.ShouldBindJSON(&payload); error != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error": error.Error(),
 		})
+		log.WithFields(helper.GetExtraFieldsForSlackLog(c, start)).Error(error.Error())
 		return
 	}
 
@@ -24,6 +30,7 @@ func (s *Server) LoginUser(c *gin.Context) {
 			"db message": error.Error(),
 			"message":    "We could not find your phone.",
 		})
+		log.WithFields(helper.GetExtraFieldsForSlackLog(c, start)).Error(error.Error())
 		return
 	} else {
 		c.JSON(http.StatusOK, gin.H{
