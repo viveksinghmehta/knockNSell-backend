@@ -26,11 +26,11 @@ func (s *Server) LoginUser(c *gin.Context) {
 
 	dbResponse, error := s.q.GetUserByPhoneNumber(c.Request.Context(), payload.PhoneNumber)
 	if error != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"db message": error.Error(),
 			"message":    "We could not find your phone.",
 		})
-		log.WithFields(helper.GetExtraFieldsForSlackLog(c, start)).Error(error.Error())
+		log.WithFields(helper.GetExtraFieldsForSlackLog(c, start)).Error(error.Error() + "🚨")
 		return
 	} else {
 		c.JSON(http.StatusOK, gin.H{
@@ -58,15 +58,6 @@ func (s *Server) SignUpUser(c *gin.Context) {
 		return
 	}
 
-	// // Check for User in DB from phone number
-	// _, error := s.q.GetUserByPhoneNumber(c.Request.Context(), payload.PhoneNumber)
-	// if error == nil {
-	// 	c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-	// 		"db message": error.Error(),
-	// 		"message":    "User already exist",
-	// 	})
-	// 	return
-	// } else {
 	dbResponse, error := s.q.CreateUser(c.Request.Context(), db.CreateUserParams{
 		PhoneNumber: payload.PhoneNumber,
 		AccountType: payload.AccountType,
@@ -115,5 +106,4 @@ func (s *Server) SignUpUser(c *gin.Context) {
 			"db message": dbResponse.ID,
 		})
 	}
-	// }
 }

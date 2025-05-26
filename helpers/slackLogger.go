@@ -65,7 +65,7 @@ func (hook *SlackHook) Fire(entry *log.Entry) error {
 		fields = append(fields, map[string]string{
 			"title": key,
 			"value": fmt.Sprintf("%v", value),
-			"short": "true",
+			"short": "false",
 		})
 	}
 
@@ -112,16 +112,31 @@ func (hook *SlackHook) Fire(entry *log.Entry) error {
 }
 
 func GetExtraFieldsForSlackLog(c *gin.Context, startTime time.Time) log.Fields {
-	body, _ := io.ReadAll(c.Request.Body)
-
 	duration := time.Since(startTime)
+
+	// Read request body (copying for safety)
+	var requestBody string
+	if c.Request.Body != nil {
+		bodyBytes, _ := io.ReadAll(c.Request.Body)
+		requestBody = string(bodyBytes)
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	}
+
+	// Capture request headers
+	headerBytes, _ := json.MarshalIndent(c.Request.Header, "", "  ")
+
+	// Attempt to get response body from context (assuming it was set previously)
+	responseBody := c.Writer.Header().Get("X-Response-Body") // Custom: must be set by middleware if needed
+
 	return log.Fields{
-		"Path":        c.Request.URL.Path,
-		"Status code": http.StatusOK,
-		"IP address":  c.Request.RemoteAddr,
-		"Method":      c.Request.Method,
-		"Duration":    duration,
-		"Host":        c.Request.Host,
-		"Body":        body,
+		"Path":           c.Request.URL.Path,
+		"Status code":    c.Writer.Status(),
+		"IP address":     c.Request.RemoteAddr,
+		"Method":         c.Request.Method,
+		"Duration":       duration.String(),
+		"Host":           c.Request.Host,
+		"Request Header": string(headerBytes),
+		"Request Body":   requestBody,
+		"Response Body":  responseBody,
 	}
 }
