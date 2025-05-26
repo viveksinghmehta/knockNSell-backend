@@ -2,6 +2,7 @@ package helper
 
 import (
 	model "knockNSell/db/gen"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -17,8 +18,8 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-var accessSecret = []byte("your-access-secret-key") // Replace with your actual secret
-var refreshSecret = []byte("your-refresh-secret-key")
+var accessSecret = []byte(os.Getenv("ACCESS_SECRET_KEY"))
+var refreshSecret = []byte(os.Getenv("REFRESH_SECRET_KEY"))
 
 // GenerateAccessToken creates a JWT access token with a short expiration time
 func GenerateAccessToken(user model.User) (string, error) {
