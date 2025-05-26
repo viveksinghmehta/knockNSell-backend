@@ -24,6 +24,9 @@ func New(db DBTX) *Queries {
 func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	q := Queries{db: db}
 	var err error
+	if q.createAuthTokenStmt, err = db.PrepareContext(ctx, createAuthToken); err != nil {
+		return nil, fmt.Errorf("error preparing query CreateAuthToken: %w", err)
+	}
 	if q.createDistributionDetailStmt, err = db.PrepareContext(ctx, createDistributionDetail); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateDistributionDetail: %w", err)
 	}
@@ -36,8 +39,23 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.createUserStmt, err = db.PrepareContext(ctx, createUser); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateUser: %w", err)
 	}
+	if q.deleteAuthTokenByIDStmt, err = db.PrepareContext(ctx, deleteAuthTokenByID); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteAuthTokenByID: %w", err)
+	}
+	if q.deleteAuthTokensByUserIDStmt, err = db.PrepareContext(ctx, deleteAuthTokensByUserID); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteAuthTokensByUserID: %w", err)
+	}
 	if q.deleteOTPByPhoneNumberStmt, err = db.PrepareContext(ctx, deleteOTPByPhoneNumber); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteOTPByPhoneNumber: %w", err)
+	}
+	if q.getAuthTokenByHashStmt, err = db.PrepareContext(ctx, getAuthTokenByHash); err != nil {
+		return nil, fmt.Errorf("error preparing query GetAuthTokenByHash: %w", err)
+	}
+	if q.getAuthTokenByIDStmt, err = db.PrepareContext(ctx, getAuthTokenByID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetAuthTokenByID: %w", err)
+	}
+	if q.getAuthTokenByRefreshTokenStmt, err = db.PrepareContext(ctx, getAuthTokenByRefreshToken); err != nil {
+		return nil, fmt.Errorf("error preparing query GetAuthTokenByRefreshToken: %w", err)
 	}
 	if q.getFlyerOrderStmt, err = db.PrepareContext(ctx, getFlyerOrder); err != nil {
 		return nil, fmt.Errorf("error preparing query GetFlyerOrder: %w", err)
@@ -51,6 +69,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getUserByPhoneNumberStmt, err = db.PrepareContext(ctx, getUserByPhoneNumber); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByPhoneNumber: %w", err)
 	}
+	if q.listAuthTokensByUserIDStmt, err = db.PrepareContext(ctx, listAuthTokensByUserID); err != nil {
+		return nil, fmt.Errorf("error preparing query ListAuthTokensByUserID: %w", err)
+	}
 	if q.listDistributionByOrderStmt, err = db.PrepareContext(ctx, listDistributionByOrder); err != nil {
 		return nil, fmt.Errorf("error preparing query ListDistributionByOrder: %w", err)
 	}
@@ -63,8 +84,11 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listPrintDetailsByOrderStmt, err = db.PrepareContext(ctx, listPrintDetailsByOrder); err != nil {
 		return nil, fmt.Errorf("error preparing query ListPrintDetailsByOrder: %w", err)
 	}
-	if q.listUsersStmt, err = db.PrepareContext(ctx, listUsers); err != nil {
-		return nil, fmt.Errorf("error preparing query ListUsers: %w", err)
+	if q.revokeAuthTokenStmt, err = db.PrepareContext(ctx, revokeAuthToken); err != nil {
+		return nil, fmt.Errorf("error preparing query RevokeAuthToken: %w", err)
+	}
+	if q.updateAuthTokensStmt, err = db.PrepareContext(ctx, updateAuthTokens); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateAuthTokens: %w", err)
 	}
 	if q.updateFlyerOrderStatusStmt, err = db.PrepareContext(ctx, updateFlyerOrderStatus); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateFlyerOrderStatus: %w", err)
@@ -77,6 +101,11 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 
 func (q *Queries) Close() error {
 	var err error
+	if q.createAuthTokenStmt != nil {
+		if cerr := q.createAuthTokenStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createAuthTokenStmt: %w", cerr)
+		}
+	}
 	if q.createDistributionDetailStmt != nil {
 		if cerr := q.createDistributionDetailStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createDistributionDetailStmt: %w", cerr)
@@ -97,9 +126,34 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing createUserStmt: %w", cerr)
 		}
 	}
+	if q.deleteAuthTokenByIDStmt != nil {
+		if cerr := q.deleteAuthTokenByIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteAuthTokenByIDStmt: %w", cerr)
+		}
+	}
+	if q.deleteAuthTokensByUserIDStmt != nil {
+		if cerr := q.deleteAuthTokensByUserIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteAuthTokensByUserIDStmt: %w", cerr)
+		}
+	}
 	if q.deleteOTPByPhoneNumberStmt != nil {
 		if cerr := q.deleteOTPByPhoneNumberStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing deleteOTPByPhoneNumberStmt: %w", cerr)
+		}
+	}
+	if q.getAuthTokenByHashStmt != nil {
+		if cerr := q.getAuthTokenByHashStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getAuthTokenByHashStmt: %w", cerr)
+		}
+	}
+	if q.getAuthTokenByIDStmt != nil {
+		if cerr := q.getAuthTokenByIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getAuthTokenByIDStmt: %w", cerr)
+		}
+	}
+	if q.getAuthTokenByRefreshTokenStmt != nil {
+		if cerr := q.getAuthTokenByRefreshTokenStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getAuthTokenByRefreshTokenStmt: %w", cerr)
 		}
 	}
 	if q.getFlyerOrderStmt != nil {
@@ -122,6 +176,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getUserByPhoneNumberStmt: %w", cerr)
 		}
 	}
+	if q.listAuthTokensByUserIDStmt != nil {
+		if cerr := q.listAuthTokensByUserIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listAuthTokensByUserIDStmt: %w", cerr)
+		}
+	}
 	if q.listDistributionByOrderStmt != nil {
 		if cerr := q.listDistributionByOrderStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listDistributionByOrderStmt: %w", cerr)
@@ -142,9 +201,14 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listPrintDetailsByOrderStmt: %w", cerr)
 		}
 	}
-	if q.listUsersStmt != nil {
-		if cerr := q.listUsersStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing listUsersStmt: %w", cerr)
+	if q.revokeAuthTokenStmt != nil {
+		if cerr := q.revokeAuthTokenStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing revokeAuthTokenStmt: %w", cerr)
+		}
+	}
+	if q.updateAuthTokensStmt != nil {
+		if cerr := q.updateAuthTokensStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateAuthTokensStmt: %w", cerr)
 		}
 	}
 	if q.updateFlyerOrderStatusStmt != nil {
@@ -194,45 +258,61 @@ func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, ar
 }
 
 type Queries struct {
-	db                           DBTX
-	tx                           *sql.Tx
-	createDistributionDetailStmt *sql.Stmt
-	createFlyerOrderStmt         *sql.Stmt
-	createPrintDetailStmt        *sql.Stmt
-	createUserStmt               *sql.Stmt
-	deleteOTPByPhoneNumberStmt   *sql.Stmt
-	getFlyerOrderStmt            *sql.Stmt
-	getOTPByPhoneNumberStmt      *sql.Stmt
-	getUserStmt                  *sql.Stmt
-	getUserByPhoneNumberStmt     *sql.Stmt
-	listDistributionByOrderStmt  *sql.Stmt
-	listFlyerOrdersByUserStmt    *sql.Stmt
-	listOTPVerificationsStmt     *sql.Stmt
-	listPrintDetailsByOrderStmt  *sql.Stmt
-	listUsersStmt                *sql.Stmt
-	updateFlyerOrderStatusStmt   *sql.Stmt
-	upsertOtpVerificationStmt    *sql.Stmt
+	db                             DBTX
+	tx                             *sql.Tx
+	createAuthTokenStmt            *sql.Stmt
+	createDistributionDetailStmt   *sql.Stmt
+	createFlyerOrderStmt           *sql.Stmt
+	createPrintDetailStmt          *sql.Stmt
+	createUserStmt                 *sql.Stmt
+	deleteAuthTokenByIDStmt        *sql.Stmt
+	deleteAuthTokensByUserIDStmt   *sql.Stmt
+	deleteOTPByPhoneNumberStmt     *sql.Stmt
+	getAuthTokenByHashStmt         *sql.Stmt
+	getAuthTokenByIDStmt           *sql.Stmt
+	getAuthTokenByRefreshTokenStmt *sql.Stmt
+	getFlyerOrderStmt              *sql.Stmt
+	getOTPByPhoneNumberStmt        *sql.Stmt
+	getUserStmt                    *sql.Stmt
+	getUserByPhoneNumberStmt       *sql.Stmt
+	listAuthTokensByUserIDStmt     *sql.Stmt
+	listDistributionByOrderStmt    *sql.Stmt
+	listFlyerOrdersByUserStmt      *sql.Stmt
+	listOTPVerificationsStmt       *sql.Stmt
+	listPrintDetailsByOrderStmt    *sql.Stmt
+	revokeAuthTokenStmt            *sql.Stmt
+	updateAuthTokensStmt           *sql.Stmt
+	updateFlyerOrderStatusStmt     *sql.Stmt
+	upsertOtpVerificationStmt      *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
-		db:                           tx,
-		tx:                           tx,
-		createDistributionDetailStmt: q.createDistributionDetailStmt,
-		createFlyerOrderStmt:         q.createFlyerOrderStmt,
-		createPrintDetailStmt:        q.createPrintDetailStmt,
-		createUserStmt:               q.createUserStmt,
-		deleteOTPByPhoneNumberStmt:   q.deleteOTPByPhoneNumberStmt,
-		getFlyerOrderStmt:            q.getFlyerOrderStmt,
-		getOTPByPhoneNumberStmt:      q.getOTPByPhoneNumberStmt,
-		getUserStmt:                  q.getUserStmt,
-		getUserByPhoneNumberStmt:     q.getUserByPhoneNumberStmt,
-		listDistributionByOrderStmt:  q.listDistributionByOrderStmt,
-		listFlyerOrdersByUserStmt:    q.listFlyerOrdersByUserStmt,
-		listOTPVerificationsStmt:     q.listOTPVerificationsStmt,
-		listPrintDetailsByOrderStmt:  q.listPrintDetailsByOrderStmt,
-		listUsersStmt:                q.listUsersStmt,
-		updateFlyerOrderStatusStmt:   q.updateFlyerOrderStatusStmt,
-		upsertOtpVerificationStmt:    q.upsertOtpVerificationStmt,
+		db:                             tx,
+		tx:                             tx,
+		createAuthTokenStmt:            q.createAuthTokenStmt,
+		createDistributionDetailStmt:   q.createDistributionDetailStmt,
+		createFlyerOrderStmt:           q.createFlyerOrderStmt,
+		createPrintDetailStmt:          q.createPrintDetailStmt,
+		createUserStmt:                 q.createUserStmt,
+		deleteAuthTokenByIDStmt:        q.deleteAuthTokenByIDStmt,
+		deleteAuthTokensByUserIDStmt:   q.deleteAuthTokensByUserIDStmt,
+		deleteOTPByPhoneNumberStmt:     q.deleteOTPByPhoneNumberStmt,
+		getAuthTokenByHashStmt:         q.getAuthTokenByHashStmt,
+		getAuthTokenByIDStmt:           q.getAuthTokenByIDStmt,
+		getAuthTokenByRefreshTokenStmt: q.getAuthTokenByRefreshTokenStmt,
+		getFlyerOrderStmt:              q.getFlyerOrderStmt,
+		getOTPByPhoneNumberStmt:        q.getOTPByPhoneNumberStmt,
+		getUserStmt:                    q.getUserStmt,
+		getUserByPhoneNumberStmt:       q.getUserByPhoneNumberStmt,
+		listAuthTokensByUserIDStmt:     q.listAuthTokensByUserIDStmt,
+		listDistributionByOrderStmt:    q.listDistributionByOrderStmt,
+		listFlyerOrdersByUserStmt:      q.listFlyerOrdersByUserStmt,
+		listOTPVerificationsStmt:       q.listOTPVerificationsStmt,
+		listPrintDetailsByOrderStmt:    q.listPrintDetailsByOrderStmt,
+		revokeAuthTokenStmt:            q.revokeAuthTokenStmt,
+		updateAuthTokensStmt:           q.updateAuthTokensStmt,
+		updateFlyerOrderStatusStmt:     q.updateFlyerOrderStatusStmt,
+		upsertOtpVerificationStmt:      q.upsertOtpVerificationStmt,
 	}
 }
