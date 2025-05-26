@@ -18,6 +18,8 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
+const appName = "knockNSell"
+
 var accessSecret = []byte(os.Getenv("ACCESS_SECRET_KEY"))
 var refreshSecret = []byte(os.Getenv("REFRESH_SECRET_KEY"))
 
@@ -30,9 +32,9 @@ func GenerateAccessToken(user model.User) (string, error) {
 		Mobile:      user.PhoneNumber,
 		AccountType: user.AccountType,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)), // Access token expires in 15 minutes
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // Access token expires in 24 hours
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    "your-app-name",
+			Issuer:    appName,
 			Subject:   user.ID.String(),
 		},
 	}
@@ -50,9 +52,9 @@ func GenerateRefreshToken(user model.User) (string, error) {
 	claims := CustomClaims{
 		UserID: user.ID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)), // Refresh token expires in 7 days
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(14 * 24 * time.Hour)), // Refresh token expires in 14 days
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    "your-app-name",
+			Issuer:    appName,
 			Subject:   user.ID.String(),
 		},
 	}
