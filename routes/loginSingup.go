@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"database/sql"
 	db "knockNSell/db/gen"
 	"net/http"
 	"strings"
@@ -33,12 +34,56 @@ func (s *Server) LoginUser(c *gin.Context) {
 		log.WithFields(helper.GetExtraFieldsForSlackLog(c, start)).Error(error.Error() + "🚨")
 		return
 	} else {
-		c.JSON(http.StatusOK, gin.H{
-			"phone":      dbResponse.PhoneNumber,
-			"message":    "Logged In Successfully",
-			"user":       dbResponse,
-			"db message": dbResponse.ID,
-		})
+		var authTokenExpiresAt = time.Now().Add(24 * time.Hour)         // Access token expires in 24 hours
+		var refreshTokenExpiresAt = time.Now().Add(14 * 24 * time.Hour) // Refresh token expires in 14 days
+		authToken, authError := helper.GenerateAccessToken(dbResponse, authTokenExpiresAt)
+		refreshoken, refreshError := helper.GenerateRefreshToken(dbResponse, refreshTokenExpiresAt)
+		if authError != nil && refreshError != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"status_code": 401,
+				"message":     "Could not generate the token.",
+			})
+			log.WithFields(helper.GetExtraFieldsForSlackLog(c, start)).Error("Could not generate the token." + "🚨")
+			return
+		} else {
+			payLoad := db.CreateAuthTokenParams{
+				UserID:       dbResponse.ID,
+				AuthToken:    authToken,
+				RefreshToken: refreshoken,
+				UserAgent: sql.NullString{
+					String: c.GetHeader("User-Agent"),
+					Valid:  true,
+				},
+				AuthTokenExpiresAt: sql.NullTime{
+					Time:  authTokenExpiresAt,
+					Valid: true,
+				},
+				RefreshTokenExpiresAt: sql.NullTime{
+					Time:  refreshTokenExpiresAt,
+					Valid: true,
+				},
+				IpAddress: sql.NullString{
+					String: c.Request.RemoteAddr,
+					Valid:  true,
+				},
+			}
+			dbAuth, error := s.q.CreateAuthToken(c.Request.Context(), payLoad)
+			if error != nil {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"status_code": 401,
+					"message":     "Could not save the tokens to Database",
+				})
+				log.WithFields(helper.GetExtraFieldsForSlackLog(c, start)).Error("Could not save the tokens to Database." + "🚨")
+				return
+			} else {
+				c.JSON(http.StatusOK, gin.H{
+					"status_code":   200,
+					"message":       "Logged In Successfully",
+					"auth_token":    dbAuth.AuthToken,
+					"refresh_token": dbAuth.RefreshToken,
+				})
+			}
+		}
 	}
 
 }

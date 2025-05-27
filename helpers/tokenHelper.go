@@ -24,7 +24,7 @@ var accessSecret = []byte(os.Getenv("ACCESS_SECRET_KEY"))
 var refreshSecret = []byte(os.Getenv("REFRESH_SECRET_KEY"))
 
 // GenerateAccessToken creates a JWT access token with a short expiration time
-func GenerateAccessToken(user model.User) (string, error) {
+func GenerateAccessToken(user model.User, expiresAt time.Time) (string, error) {
 	// Set custom and registered claims
 	claims := CustomClaims{
 		UserID:      user.ID,
@@ -32,7 +32,7 @@ func GenerateAccessToken(user model.User) (string, error) {
 		Mobile:      user.PhoneNumber,
 		AccountType: user.AccountType,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // Access token expires in 24 hours
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    appName,
 			Subject:   user.ID.String(),
@@ -47,12 +47,12 @@ func GenerateAccessToken(user model.User) (string, error) {
 }
 
 // GenerateRefreshToken creates a JWT refresh token with a longer expiration time
-func GenerateRefreshToken(user model.User) (string, error) {
+func GenerateRefreshToken(user model.User, expiresAt time.Time) (string, error) {
 	// Set custom and registered claims
 	claims := CustomClaims{
 		UserID: user.ID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(14 * 24 * time.Hour)), // Refresh token expires in 14 days
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    appName,
 			Subject:   user.ID.String(),
