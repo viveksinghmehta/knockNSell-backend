@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 )
 
 // CustomClaims represents the JWT claims, embedding the standard claims
@@ -64,4 +65,16 @@ func GenerateRefreshToken(user model.User, expiresAt time.Time) (string, error) 
 
 	// Sign and get the complete encoded token as a string
 	return token.SignedString(refreshSecret)
+}
+
+func CreateAuthAndRefreshToken(authExpiresAt time.Time, refreshExpiresAt time.Time, user model.User) (authToken, refreshToken string) {
+	authToken, authError := GenerateAccessToken(user, authExpiresAt)
+	refreshToken, refreshError := GenerateRefreshToken(user, refreshExpiresAt)
+	if authError != nil && refreshError != nil {
+		log.WithFields(log.Fields{
+			"authErrorMessage":    authError.Error(),
+			"refreshErrorMessage": refreshError.Error(),
+		}).Error("Could not generate the token." + "🚨")
+	}
+	return authToken, refreshToken
 }
