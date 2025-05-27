@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	db "knockNSell/db/gen"
 	helper "knockNSell/helpers"
 	"knockNSell/routes"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/joho/godotenv"
 
 	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 	log "github.com/sirupsen/logrus"
@@ -38,10 +36,10 @@ func initDB() {
 
 func init() {
 	// Remove this code for Production
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Error loading .env file:", err)
-	}
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	fmt.Println("Error loading .env file:", err)
+	// }
 
 	// Use this to get the mode :- release/debug
 	mode := os.Getenv("GIN_MODE")
