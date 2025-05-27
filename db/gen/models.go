@@ -100,6 +100,20 @@ func (ns NullGenderEnum) Value() (driver.Value, error) {
 	return string(ns.GenderEnum), nil
 }
 
+type AuthToken struct {
+	ID                    uuid.UUID      `json:"id"`
+	UserID                uuid.UUID      `json:"user_id"`
+	AuthToken             string         `json:"auth_token"`
+	RefreshToken          string         `json:"refresh_token"`
+	UserAgent             sql.NullString `json:"user_agent"`
+	IpAddress             sql.NullString `json:"ip_address"`
+	CreatedAt             sql.NullTime   `json:"created_at"`
+	AuthTokenExpiresAt    sql.NullTime   `json:"auth_token_expires_at"`
+	RefreshTokenExpiresAt sql.NullTime   `json:"refresh_token_expires_at"`
+	AuthTokenHash         sql.NullString `json:"auth_token_hash"`
+	Revoked               sql.NullBool   `json:"revoked"`
+}
+
 type FlyerDistributionDetail struct {
 	ID               uuid.UUID      `json:"id"`
 	OrderID          uuid.NullUUID  `json:"order_id"`

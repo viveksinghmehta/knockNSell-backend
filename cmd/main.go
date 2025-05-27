@@ -3,34 +3,25 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	db "knockNSell/db/gen"
+	helper "knockNSell/helpers"
 	"knockNSell/routes"
-	"log"
 	"os"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
 	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
+	log "github.com/sirupsen/logrus"
 )
 
 var ginLambda *ginadapter.GinLambdaV2
 var queries *db.Queries
 
-func init() {
-	// Only for development remove it in PROD
-	mode := os.Getenv("GIN_MODE")
-
-	if mode == "debug" {
-		// Only for development remove it in PROD
-		if err := godotenv.Load(); err != nil {
-			log.Fatalf("Error loading .env file: %v", err)
-		}
-	}
-
+func initDB() {
 	// 1. Open the database once (Lambda warm starts reuse this)
 	dsn := os.Getenv("DATABASE_URL")
 	sqldb, err := sql.Open("postgres", dsn)
@@ -43,14 +34,29 @@ func init() {
 
 	// 2. Instantiate sqlc queries
 	queries = db.New(sqldb)
+}
+
+func init() {
+	// Remove this code for Production
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file:", err)
+	}
+
+	// Use this to get the mode :- release/debug
+	mode := os.Getenv("GIN_MODE")
+
+	initDB()
 
 	if mode == "release" {
-		// 3. Wire up Gin with your handlers
-		router := gin.Default()
+		router := helper.SetUpRouterAndLogger("PROD")
 		server := routes.NewServer(queries)
 		router.GET("/ping", routes.PingServer)
 		router.POST("/sendotp", server.Sendotp)
 		router.POST("/verifyotp", server.VerifyOTP)
+		router.POST("/login", server.LoginUser)
+		router.POST("/signup", server.SignUpUser)
+		router.POST("/error", routes.SendError)
 		ginLambda = ginadapter.NewV2(router)
 	}
 }
@@ -62,11 +68,14 @@ func handleRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest) (eve
 func main() {
 	mode := os.Getenv("GIN_MODE")
 	if mode == "debug" {
-		router := gin.Default()
+		router := helper.SetUpRouterAndLogger("PROD")
 		server := routes.NewServer(queries)
 		router.GET("/ping", routes.PingServer)
 		router.POST("/sendotp", server.Sendotp)
 		router.POST("/verifyotp", server.VerifyOTP)
+		router.POST("/login", server.LoginUser)
+		router.POST("/signup", server.SignUpUser)
+		router.POST("/error", routes.SendError)
 		router.Run()
 	} else {
 		lambda.Start(handleRequest) // start Lambda :contentReference[oaicite:9]{index=9}

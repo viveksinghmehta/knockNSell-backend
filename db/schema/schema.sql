@@ -93,3 +93,24 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+CREATE TABLE auth_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    auth_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    user_agent TEXT,
+    ip_address TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    auth_token_expires_at TIMESTAMP,
+    refresh_token_expires_at TIMESTAMP,
+    auth_token_hash TEXT,
+    revoked BOOLEAN DEFAULT FALSE
+);
+
+-- Populate the hash column (example using PostgreSQL's built-in functions)
+UPDATE auth_tokens SET auth_token_hash = encode(digest(auth_token, 'sha256'), 'hex');
+
+-- Create an index on the hash column
+CREATE INDEX idx_auth_tokens_auth_token_hash ON auth_tokens (auth_token_hash);

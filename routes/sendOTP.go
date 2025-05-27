@@ -84,9 +84,8 @@ func (s *Server) Sendotp(c *gin.Context) {
 			})
 			return
 		} else {
-			c.JSON(200, gin.H{
+			c.JSON(http.StatusOK, gin.H{
 				"status":       resp.Status,
-				"code":         code,
 				"date_created": resp.DateCreated,
 				"phone":        resp.To,
 				"date_updated": resp.DateUpdated,
