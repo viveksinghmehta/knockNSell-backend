@@ -93,6 +93,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.updateFlyerOrderStatusStmt, err = db.PrepareContext(ctx, updateFlyerOrderStatus); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateFlyerOrderStatus: %w", err)
 	}
+	if q.updateUserByPhoneNumberStmt, err = db.PrepareContext(ctx, updateUserByPhoneNumber); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateUserByPhoneNumber: %w", err)
+	}
 	if q.upsertOtpVerificationStmt, err = db.PrepareContext(ctx, upsertOtpVerification); err != nil {
 		return nil, fmt.Errorf("error preparing query UpsertOtpVerification: %w", err)
 	}
@@ -216,6 +219,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing updateFlyerOrderStatusStmt: %w", cerr)
 		}
 	}
+	if q.updateUserByPhoneNumberStmt != nil {
+		if cerr := q.updateUserByPhoneNumberStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateUserByPhoneNumberStmt: %w", cerr)
+		}
+	}
 	if q.upsertOtpVerificationStmt != nil {
 		if cerr := q.upsertOtpVerificationStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing upsertOtpVerificationStmt: %w", cerr)
@@ -283,6 +291,7 @@ type Queries struct {
 	revokeAuthTokenStmt            *sql.Stmt
 	updateAuthTokensStmt           *sql.Stmt
 	updateFlyerOrderStatusStmt     *sql.Stmt
+	updateUserByPhoneNumberStmt    *sql.Stmt
 	upsertOtpVerificationStmt      *sql.Stmt
 }
 
@@ -313,6 +322,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		revokeAuthTokenStmt:            q.revokeAuthTokenStmt,
 		updateAuthTokensStmt:           q.updateAuthTokensStmt,
 		updateFlyerOrderStatusStmt:     q.updateFlyerOrderStatusStmt,
+		updateUserByPhoneNumberStmt:    q.updateUserByPhoneNumberStmt,
 		upsertOtpVerificationStmt:      q.upsertOtpVerificationStmt,
 	}
 }
