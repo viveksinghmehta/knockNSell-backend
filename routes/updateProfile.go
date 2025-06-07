@@ -5,14 +5,12 @@ import (
 	db "knockNSell/db/gen"
 	helper "knockNSell/helpers"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 )
 
 func (s *Server) UpdateProfile(c *gin.Context) {
-	start := time.Now()
+
 	type userSingUpModel struct {
 		PhoneNumber      string `json:"phoneNumber" binding:"required"`
 		AccountType      string `json:"accountType,omitempty"`
@@ -34,7 +32,6 @@ func (s *Server) UpdateProfile(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error": error.Error(),
 		})
-		log.WithFields(helper.GetExtraFieldsForSlackLog(c, start)).Error(error.Error() + "🚨")
 		return
 	}
 	fmt.Printf("Updating user with phoneNumber=%s accountType=%s email=%s\n",
@@ -66,7 +63,6 @@ func (s *Server) UpdateProfile(c *gin.Context) {
 			"db message":  error.Error(),
 			"message":     "Can not save the details, please try again.",
 		})
-		log.WithFields(helper.GetExtraFieldsForSlackLog(c, start)).Error(error.Error() + "🚨")
 		return
 	} else {
 		c.JSON(http.StatusOK, gin.H{

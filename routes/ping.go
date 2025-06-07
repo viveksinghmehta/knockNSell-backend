@@ -1,25 +1,22 @@
 package routes
 
 import (
+	logger "knockNSell/logger"
 	"net/http"
-	"time"
-
-	helper "knockNSell/helpers"
 
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 )
 
 func PingServer(c *gin.Context) {
-	log.Info("Request sent to the server :Ping")
 	c.Status(http.StatusOK)
 }
 
 func SendError(c *gin.Context) {
-	start := time.Now()
-	c.JSON(http.StatusOK, gin.H{
+	c.Request = c.Request.WithContext(
+		logger.SetLogMessage(c.Request.Context(), "✅ Successfully send error log"),
+	)
+	c.JSON(400, gin.H{
 		"status":  400,
 		"message": "successfully send an Error.",
 	})
-	log.WithFields(helper.GetExtraFieldsForSlackLog(c, start)).Error("Check the error 🚨")
 }

@@ -2,12 +2,12 @@ package helper
 
 import (
 	model "knockNSell/db/gen"
+	"log/slog"
 	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 )
 
 // CustomClaims represents the JWT claims, embedding the standard claims
@@ -71,10 +71,10 @@ func CreateAuthAndRefreshToken(authExpiresAt time.Time, refreshExpiresAt time.Ti
 	authToken, authError := GenerateAccessToken(user, authExpiresAt)
 	refreshToken, refreshError := GenerateRefreshToken(user, refreshExpiresAt)
 	if authError != nil && refreshError != nil {
-		log.WithFields(log.Fields{
-			"authErrorMessage":    authError.Error(),
-			"refreshErrorMessage": refreshError.Error(),
-		}).Error("Could not generate the token." + "🚨")
+		slog.Error("Could not generate the token. 🚨",
+			slog.String("authErrorMessage", authError.Error()),
+			slog.String("refreshErrorMessage", refreshError.Error()),
+		)
 	}
 	return authToken, refreshToken
 }
