@@ -31,7 +31,6 @@ func LoggingMiddleware() gin.HandlerFunc {
 		statusCode := c.Writer.Status()
 		method := c.Request.Method
 		path := c.Request.URL.Path
-		errMsg := c.Errors.ByType(gin.ErrorTypePrivate).String()
 
 		headersJSON, _ := json.Marshal(c.Request.Header)
 
@@ -53,7 +52,6 @@ func LoggingMiddleware() gin.HandlerFunc {
 			slog.String("headers", string(headersJSON)),
 			slog.String("body", string(bodyBytes)),
 			slog.Float64("duration_seconds", duration.Seconds()),
-			slog.String("error", errMsg),
 		}
 		// add extra fields as separate fields:
 		for k, v := range extraFields {

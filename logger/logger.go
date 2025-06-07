@@ -17,6 +17,15 @@ const (
 	extraFieldsKey = contextKey("extra_fields")
 )
 
+// SetLogMessageAndFields sets both the log message and additional fields in the request context
+func SetLogMessageAndFields(ctx context.Context, message string, fields map[string]any) context.Context {
+	ctx = SetLogMessage(ctx, message)
+	if fields != nil {
+		ctx = SetExtraFields(ctx, fields)
+	}
+	return ctx
+}
+
 // SetLogMessage sets a custom log message in the request context
 func SetLogMessage(ctx context.Context, message string) context.Context {
 	return context.WithValue(ctx, logMessageKey, message)

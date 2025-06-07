@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"database/sql"
 	db "knockNSell/db/gen"
 	logger "knockNSell/logger"
 	"net/http"
@@ -18,7 +17,9 @@ func (s *Server) LoginUser(c *gin.Context) {
 
 	if error := c.ShouldBindJSON(&payload); error != nil {
 		c.Request = c.Request.WithContext(
-			logger.SetLogMessage(c.Request.Context(), "🚨 Could not map :- "+error.Error()),
+			logger.SetLogMessageAndFields(c.Request.Context(), "🚨 Could not map ", gin.H{
+				"error": error.Error(),
+			}),
 		)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error": error.Error(),
@@ -29,7 +30,9 @@ func (s *Server) LoginUser(c *gin.Context) {
 	dbResponse, error := s.q.GetUserByPhoneNumber(c.Request.Context(), payload.PhoneNumber)
 	if error != nil {
 		c.Request = c.Request.WithContext(
-			logger.SetLogMessage(c.Request.Context(), "🚨 User not found for phone number :- "+payload.PhoneNumber+":-"+error.Error()),
+			logger.SetLogMessageAndFields(c.Request.Context(), "🚨 User not found for phone number :- "+payload.PhoneNumber, gin.H{
+				"error": error.Error(),
+			}),
 		)
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"status_code": 401,
@@ -55,6 +58,11 @@ func (s *Server) LoginUser(c *gin.Context) {
 
 		dbAuth, error := s.q.CreateAuthToken(c.Request.Context(), payLoad)
 		if error != nil {
+			c.Request = c.Request.WithContext(
+				logger.SetLogMessageAndFields(c.Request.Context(), "🚨 Could not save the tokens to Database ", gin.H{
+					"error": error.Error(),
+				}),
+			)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"status_code": 401,
 				"message":     "Could not save the tokens to Database",
@@ -91,6 +99,11 @@ func (s *Server) SignUpUser(c *gin.Context) {
 	var payload userSingUpModel
 
 	if error := c.ShouldBindJSON(&payload); error != nil {
+		c.Request = c.Request.WithContext(
+			logger.SetLogMessageAndFields(c.Request.Context(), "🚨 Could not save the tokens to Database ", gin.H{
+				"error": error.Error(),
+			}),
+		)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error": error.Error(),
 		})
@@ -104,12 +117,22 @@ func (s *Server) SignUpUser(c *gin.Context) {
 
 	if error != nil {
 		if strings.Contains(error.Error(), "users_phone_number_key") {
+			c.Request = c.Request.WithContext(
+				logger.SetLogMessageAndFields(c.Request.Context(), "🚨 The user already exits with phone :- "+payload.PhoneNumber, gin.H{
+					"error": error.Error(),
+				}),
+			)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"status_code": 401,
 				"db message":  error.Error(),
 				"message":     "The user already exist.",
 			})
 		} else {
+			c.Request = c.Request.WithContext(
+				logger.SetLogMessageAndFields(c.Request.Context(), "🚨 Can not create a user with phone number :- "+payload.PhoneNumber, gin.H{
+					"error": error.Error(),
+				}),
+			)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"status_code": 400,
 				"db message":  error.Error(),
@@ -125,29 +148,22 @@ func (s *Server) SignUpUser(c *gin.Context) {
 		authToken, refreshToken := helper.CreateAuthAndRefreshToken(authTokenExpiresAt, refreshTokenExpiresAt, dbResponse)
 
 		payLoad := db.CreateAuthTokenParams{
-			UserID:       dbResponse.ID,
-			AuthToken:    authToken,
-			RefreshToken: refreshToken,
-			UserAgent: sql.NullString{
-				String: c.GetHeader("User-Agent"),
-				Valid:  true,
-			},
-			AuthTokenExpiresAt: sql.NullTime{
-				Time:  authTokenExpiresAt,
-				Valid: true,
-			},
-			RefreshTokenExpiresAt: sql.NullTime{
-				Time:  refreshTokenExpiresAt,
-				Valid: true,
-			},
-			IpAddress: sql.NullString{
-				String: c.Request.RemoteAddr,
-				Valid:  true,
-			},
+			UserID:                dbResponse.ID,
+			AuthToken:             authToken,
+			RefreshToken:          refreshToken,
+			UserAgent:             helper.ToNullString(c.GetHeader("User-Agent")),
+			AuthTokenExpiresAt:    helper.ToNullTime(authTokenExpiresAt),
+			RefreshTokenExpiresAt: helper.ToNullTime(refreshTokenExpiresAt),
+			IpAddress:             helper.ToNullString(c.Request.RemoteAddr),
 		}
 
 		dbAuth, error := s.q.CreateAuthToken(c.Request.Context(), payLoad)
 		if error != nil {
+			c.Request = c.Request.WithContext(
+				logger.SetLogMessageAndFields(c.Request.Context(), "🚨 Could not save the tokens to Database.", gin.H{
+					"error": error.Error(),
+				}),
+			)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"status_code": 401,
 				"message":     "Could not save the tokens to Database",
