@@ -1,13 +1,13 @@
-name: On Merge to PROD - Clean Main.go and Build
+name: On Merge to prod - Clean cmd/main.go and Build
 
 on:
   push:
     branches:
-      - prod # Run on any push to PROD (merge included)
+      - prod # Run on any push to prod (merge included)
 
 jobs:
   clean-and-build:
-    name: Clean Main.go and Build Go Project
+    name: Clean cmd/main.go and Build Go Project
     runs-on: ubuntu-latest
 
     steps:
@@ -19,24 +19,24 @@ jobs:
         with:
           go-version: "1.24" # Use your Go version here
 
-      - name: Remove godotenv block in main.go
+      - name: Remove godotenv block in cmd/main.go
         run: |
-          echo "Removing godotenv block in main.go..."
+          echo "Removing godotenv block in cmd/main.go..."
           # Delete lines between the start comment and closing '}'
-          sed -i '/Remove this code for Production/,/}/d' main.go
+          sed -i '/Remove this code for Production/,/}/d' cmd/main.go
 
-          echo "Updated main.go after cleanup:"
-          cat main.go
+          echo "Updated cmd/main.go after cleanup:"
+          cat cmd/main.go
 
       - name: Run go build
         run: |
           echo "Running go build..."
           go build ./...
 
-      - name: Commit and push cleaned main.go
+      - name: Commit and push cleaned cmd/main.go
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add main.go
-          git commit -m "Cleaned godotenv block after PROD merge" || echo "No changes to commit"
-          git push origin PROD
+          git add cmd/main.go
+          git commit -m "Cleaned godotenv block after prod merge" || echo "No changes to commit"
+          git push origin prod
