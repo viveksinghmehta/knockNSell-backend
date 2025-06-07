@@ -5,6 +5,9 @@ on:
     branches:
       - prod # Run on any push to prod (merge included)
 
+permissions:
+  contents: write # Allow push back to PROD branch
+
 jobs:
   clean-and-build:
     name: Clean cmd/main.go and Build Go Project
