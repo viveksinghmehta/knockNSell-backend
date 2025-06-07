@@ -28,8 +28,9 @@ func (s *Server) LoginUser(c *gin.Context) {
 	dbResponse, error := s.q.GetUserByPhoneNumber(c.Request.Context(), payload.PhoneNumber)
 	if error != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"db message": error.Error(),
-			"message":    "We could not find your phone.",
+			"status_code": 401,
+			"db message":  error.Error(),
+			"message":     "We could not find your phone.",
 		})
 		log.WithFields(helper.GetExtraFieldsForSlackLog(c, start)).Error(error.Error() + "🚨")
 		return
@@ -40,25 +41,13 @@ func (s *Server) LoginUser(c *gin.Context) {
 		authToken, refreshToken := helper.CreateAuthAndRefreshToken(authTokenExpiresAt, refreshTokenExpiresAt, dbResponse)
 
 		payLoad := db.CreateAuthTokenParams{
-			UserID:       dbResponse.ID,
-			AuthToken:    authToken,
-			RefreshToken: refreshToken,
-			UserAgent: sql.NullString{
-				String: c.GetHeader("User-Agent"),
-				Valid:  true,
-			},
-			AuthTokenExpiresAt: sql.NullTime{
-				Time:  authTokenExpiresAt,
-				Valid: true,
-			},
-			RefreshTokenExpiresAt: sql.NullTime{
-				Time:  refreshTokenExpiresAt,
-				Valid: true,
-			},
-			IpAddress: sql.NullString{
-				String: c.Request.RemoteAddr,
-				Valid:  true,
-			},
+			UserID:                dbResponse.ID,
+			AuthToken:             authToken,
+			RefreshToken:          refreshToken,
+			UserAgent:             helper.ToNullString(c.GetHeader("User-Agent")),
+			AuthTokenExpiresAt:    helper.ToNullTime(authTokenExpiresAt),
+			RefreshTokenExpiresAt: helper.ToNullTime(refreshTokenExpiresAt),
+			IpAddress:             helper.ToNullString(c.Request.RemoteAddr),
 		}
 
 		dbAuth, error := s.q.CreateAuthToken(c.Request.Context(), payLoad)
@@ -83,8 +72,18 @@ func (s *Server) LoginUser(c *gin.Context) {
 func (s *Server) SignUpUser(c *gin.Context) {
 	start := time.Now()
 	type userSingUpModel struct {
-		PhoneNumber string `json:"phoneNumber" binding:"required"`
-		AccountType string `json:"accountType"`
+		PhoneNumber      string `json:"phoneNumber" binding:"required"`
+		AccountType      string `json:"accountType"`
+		Email            string `json:"email,omitempty"`
+		Name             string `json:"name,omitempty"`
+		Photo            string `json:"photo,omitempty"`
+		Gender           string `json:"gender,omitempty"`
+		AadharNumber     string `json:"aadharNumber,omitempty"`
+		AadharPhotoFront string `json:"aadharPhotoFront,omitempty"`
+		AadharPhotoBack  string `json:"aadharPhotoBack,omitempty"`
+		VehicleType      string `json:"vehicleType,omitempty"`
+		Age              int    `json:"age,omitempty"`
+		GstNumber        string `json:"gstNumber,omitempty"`
 	}
 
 	var payload userSingUpModel
@@ -95,24 +94,24 @@ func (s *Server) SignUpUser(c *gin.Context) {
 		})
 		return
 	}
-
 	dbResponse, error := s.q.CreateUser(c.Request.Context(), db.CreateUserParams{
 		PhoneNumber: payload.PhoneNumber,
 		AccountType: payload.AccountType,
+		Email:       helper.ToNullString(payload.Email),
 	})
 
 	if error != nil {
 		if strings.Contains(error.Error(), "users_phone_number_key") {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"status":     401,
-				"db message": error.Error(),
-				"message":    "The user already exist.",
+				"status_code": 401,
+				"db message":  error.Error(),
+				"message":     "The user already exist.",
 			})
 		} else {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"status":     400,
-				"db message": error.Error(),
-				"message":    "Can not save the number.",
+				"status_code": 400,
+				"db message":  error.Error(),
+				"message":     "Can not save the number.",
 			})
 		}
 		return
@@ -156,7 +155,7 @@ func (s *Server) SignUpUser(c *gin.Context) {
 		} else {
 			c.JSON(http.StatusOK, gin.H{
 				"status_code":   200,
-				"message":       "Logged In Successfully",
+				"message":       "Account created successfully",
 				"auth_token":    dbAuth.AuthToken,
 				"refresh_token": dbAuth.RefreshToken,
 			})

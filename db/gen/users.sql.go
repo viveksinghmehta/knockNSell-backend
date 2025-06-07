@@ -129,3 +129,74 @@ func (q *Queries) GetUserByPhoneNumber(ctx context.Context, phoneNumber string) 
 	)
 	return i, err
 }
+
+const updateUserByPhoneNumber = `-- name: UpdateUserByPhoneNumber :one
+UPDATE users
+SET
+    account_type = COALESCE(NULLIF($1, '')::account_type_enum, account_type),
+    email = COALESCE(NULLIF($2, ''), email),
+    name = COALESCE(NULLIF($3, ''), name),
+    photo = COALESCE(NULLIF($4, ''), photo),
+    gender = COALESCE(NULLIF($5, '')::gender_enum, gender),
+    aadhar_number = COALESCE(NULLIF($6, ''), aadhar_number),
+    aadhar_photo_front = COALESCE(NULLIF($7, ''), aadhar_photo_front),
+    aadhar_photo_back = COALESCE(NULLIF($8, ''), aadhar_photo_back),
+    vehicle_type = COALESCE(NULLIF($9, ''), vehicle_type),
+    age = COALESCE($10, age), -- Age is INT, no NULLIF needed unless you want special handling
+    gst_number = COALESCE(NULLIF($11, ''), gst_number),
+    updated_at = NOW()
+WHERE phone_number = $12
+RETURNING id, account_type, phone_number, email, name, photo, gender, aadhar_number, aadhar_photo_front, aadhar_photo_back, vehicle_type, age, gst_number, admin_role, created_at, updated_at
+`
+
+type UpdateUserByPhoneNumberParams struct {
+	AccountType      interface{}   `json:"account_type"`
+	Email            interface{}   `json:"email"`
+	Name             interface{}   `json:"name"`
+	Photo            interface{}   `json:"photo"`
+	Gender           interface{}   `json:"gender"`
+	AadharNumber     interface{}   `json:"aadhar_number"`
+	AadharPhotoFront interface{}   `json:"aadhar_photo_front"`
+	AadharPhotoBack  interface{}   `json:"aadhar_photo_back"`
+	VehicleType      interface{}   `json:"vehicle_type"`
+	Age              sql.NullInt32 `json:"age"`
+	GstNumber        interface{}   `json:"gst_number"`
+	PhoneNumber      string        `json:"phone_number"`
+}
+
+func (q *Queries) UpdateUserByPhoneNumber(ctx context.Context, arg UpdateUserByPhoneNumberParams) (User, error) {
+	row := q.queryRow(ctx, q.updateUserByPhoneNumberStmt, updateUserByPhoneNumber,
+		arg.AccountType,
+		arg.Email,
+		arg.Name,
+		arg.Photo,
+		arg.Gender,
+		arg.AadharNumber,
+		arg.AadharPhotoFront,
+		arg.AadharPhotoBack,
+		arg.VehicleType,
+		arg.Age,
+		arg.GstNumber,
+		arg.PhoneNumber,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.AccountType,
+		&i.PhoneNumber,
+		&i.Email,
+		&i.Name,
+		&i.Photo,
+		&i.Gender,
+		&i.AadharNumber,
+		&i.AadharPhotoFront,
+		&i.AadharPhotoBack,
+		&i.VehicleType,
+		&i.Age,
+		&i.GstNumber,
+		&i.AdminRole,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
