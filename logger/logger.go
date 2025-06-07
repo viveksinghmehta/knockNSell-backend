@@ -31,13 +31,13 @@ func GetLogMessage(ctx context.Context) string {
 }
 
 // SetExtraFields sets additional fields in the request context for logging
-func SetExtraFields(ctx context.Context, fields map[string]interface{}) context.Context {
+func SetExtraFields(ctx context.Context, fields map[string]any) context.Context {
 	return context.WithValue(ctx, extraFieldsKey, fields)
 }
 
 // GetExtraFields retrieves additional fields from the request context for logging
-func GetExtraFields(ctx context.Context) map[string]interface{} {
-	if fields, ok := ctx.Value(extraFieldsKey).(map[string]interface{}); ok {
+func GetExtraFields(ctx context.Context) map[string]any {
+	if fields, ok := ctx.Value(extraFieldsKey).(map[string]any); ok {
 		return fields
 	}
 	return nil
@@ -47,7 +47,7 @@ type DiscordPayload struct {
 	Content string `json:"content"`
 }
 
-func sendToDiscordStructured(obj interface{}) {
+func sendToDiscordStructured(obj any) {
 	// Marshal your object
 	formatted, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
@@ -88,14 +88,14 @@ func (ch *CustomHandler) Handle(ctx context.Context, record slog.Record) error {
 	if record.Level >= slog.LevelError {
 		if ch.env != "debug" {
 			// Collect attrs
-			attrMap := make(map[string]interface{})
+			attrMap := make(map[string]any)
 			record.Attrs(func(a slog.Attr) bool {
 				attrMap[a.Key] = a.Value.Any()
 				return true
 			})
 
 			// Build full structured payload
-			errorPayload := map[string]interface{}{
+			errorPayload := map[string]any{
 				"time":    record.Time.Format(time.RFC3339),
 				"level":   record.Level.String(),
 				"message": record.Message,
