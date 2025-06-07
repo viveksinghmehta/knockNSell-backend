@@ -1,0 +1,42 @@
+name: On Merge to PROD - Clean Main.go and Build
+
+on:
+  push:
+    branches:
+      - prod # Run on any push to PROD (merge included)
+
+jobs:
+  clean-and-build:
+    name: Clean Main.go and Build Go Project
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24" # Use your Go version here
+
+      - name: Remove godotenv block in main.go
+        run: |
+          echo "Removing godotenv block in main.go..."
+          # Delete lines between the start comment and closing '}'
+          sed -i '/Remove this code for Production/,/}/d' main.go
+
+          echo "Updated main.go after cleanup:"
+          cat main.go
+
+      - name: Run go build
+        run: |
+          echo "Running go build..."
+          go build ./...
+
+      - name: Commit and push cleaned main.go
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add main.go
+          git commit -m "Cleaned godotenv block after PROD merge" || echo "No changes to commit"
+          git push origin PROD
