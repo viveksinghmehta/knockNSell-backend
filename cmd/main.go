@@ -48,14 +48,7 @@ func init() {
 
 	if mode == "release" {
 		router := helper.SetUpRouterAndLogger("PROD")
-		server := routes.NewServer(queries)
-		router.GET("/ping", routes.PingServer)
-		router.POST("/sendotp", server.Sendotp)
-		router.POST("/verifyotp", server.VerifyOTP)
-		router.POST("/login", server.LoginUser)
-		router.POST("/updateProfile", server.UpdateProfile)
-		router.POST("/signup", server.SignUpUser)
-		router.POST("/error", routes.SendError)
+		routes.RegisterRoutes(router, queries)
 		ginLambda = ginadapter.NewV2(router)
 	}
 }
@@ -68,14 +61,7 @@ func main() {
 	mode := os.Getenv("GIN_MODE")
 	if mode == "debug" {
 		router := helper.SetUpRouterAndLogger("PROD")
-		server := routes.NewServer(queries)
-		router.GET("/ping", routes.PingServer)
-		router.POST("/sendotp", server.Sendotp)
-		router.POST("/verifyotp", server.VerifyOTP)
-		router.POST("/login", server.LoginUser)
-		router.POST("/updateProfile", server.UpdateProfile)
-		router.POST("/signup", server.SignUpUser)
-		router.POST("/error", routes.SendError)
+		routes.RegisterRoutes(router, queries)
 		router.Run()
 	} else {
 		lambda.Start(handleRequest) // start Lambda :contentReference[oaicite:9]{index=9}
