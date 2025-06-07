@@ -35,11 +35,6 @@ func initDB() {
 }
 
 func init() {
-	// Remove this code for Production
-	// err := godotenv.Load()
-	// if err != nil {
-	// 	fmt.Println("Error loading .env file:", err)
-	// }
 
 	// Use this to get the mode :- release/debug
 	mode := os.Getenv("GIN_MODE")
