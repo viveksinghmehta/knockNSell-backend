@@ -3,6 +3,7 @@ package routes
 import (
 	"database/sql"
 	db "knockNSell/db/gen"
+	logger "knockNSell/logger"
 	"net/http"
 	"strings"
 	"time"
@@ -10,29 +11,31 @@ import (
 	helper "knockNSell/helpers"
 
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 )
 
 func (s *Server) LoginUser(c *gin.Context) {
 	var payload PhoneModel
-	start := time.Now()
 
 	if error := c.ShouldBindJSON(&payload); error != nil {
+		c.Request = c.Request.WithContext(
+			logger.SetLogMessage(c.Request.Context(), "🚨 Could not map :- "+error.Error()),
+		)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error": error.Error(),
 		})
-		log.WithFields(helper.GetExtraFieldsForSlackLog(c, start)).Error(error.Error())
 		return
 	}
 
 	dbResponse, error := s.q.GetUserByPhoneNumber(c.Request.Context(), payload.PhoneNumber)
 	if error != nil {
+		c.Request = c.Request.WithContext(
+			logger.SetLogMessage(c.Request.Context(), "🚨 User not found for phone number :- "+payload.PhoneNumber+":-"+error.Error()),
+		)
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"status_code": 401,
 			"db message":  error.Error(),
 			"message":     "We could not find your phone.",
 		})
-		log.WithFields(helper.GetExtraFieldsForSlackLog(c, start)).Error(error.Error() + "🚨")
 		return
 	} else {
 		var authTokenExpiresAt = time.Now().Add(24 * time.Hour)         // Access token expires in 24 hours
@@ -56,7 +59,6 @@ func (s *Server) LoginUser(c *gin.Context) {
 				"status_code": 401,
 				"message":     "Could not save the tokens to Database",
 			})
-			log.WithFields(helper.GetExtraFieldsForSlackLog(c, start)).Error("Could not save the tokens to Database." + "🚨")
 			return
 		} else {
 			c.JSON(http.StatusOK, gin.H{
@@ -70,7 +72,7 @@ func (s *Server) LoginUser(c *gin.Context) {
 }
 
 func (s *Server) SignUpUser(c *gin.Context) {
-	start := time.Now()
+
 	type userSingUpModel struct {
 		PhoneNumber      string `json:"phoneNumber" binding:"required"`
 		AccountType      string `json:"accountType"`
@@ -150,7 +152,6 @@ func (s *Server) SignUpUser(c *gin.Context) {
 				"status_code": 401,
 				"message":     "Could not save the tokens to Database",
 			})
-			log.WithFields(helper.GetExtraFieldsForSlackLog(c, start)).Error("Could not save the tokens to Database." + "🚨")
 			return
 		} else {
 			c.JSON(http.StatusOK, gin.H{

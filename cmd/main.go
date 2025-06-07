@@ -3,17 +3,20 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	db "knockNSell/db/gen"
-	helper "knockNSell/helpers"
+	logger "knockNSell/logger"
+	middleWare "knockNSell/middleware"
 	"knockNSell/routes"
+	"log"
 	"os"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/joho/godotenv"
 
 	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
-	log "github.com/sirupsen/logrus"
 )
 
 var ginLambda *ginadapter.GinLambdaV2
@@ -36,18 +39,22 @@ func initDB() {
 
 func init() {
 	// Remove this code for Production
-	// err := godotenv.Load()
-	// if err != nil {
-	// 	fmt.Println("Error loading .env file:", err)
-	// }
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file:", err)
+	}
 
 	// Use this to get the mode :- release/debug
 	mode := os.Getenv("GIN_MODE")
 
 	initDB()
 
+	logger.SetupLogger()
+
 	if mode == "release" {
-		router := helper.SetUpRouterAndLogger("PROD")
+
+		router := routes.SetupRouter()
+		router.Use(middleWare.LoggingMiddleware())
 		routes.RegisterRoutes(router, queries)
 		ginLambda = ginadapter.NewV2(router)
 	}
@@ -60,7 +67,8 @@ func handleRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest) (eve
 func main() {
 	mode := os.Getenv("GIN_MODE")
 	if mode == "debug" {
-		router := helper.SetUpRouterAndLogger("PROD")
+		router := routes.SetupRouter()
+		router.Use(middleWare.LoggingMiddleware())
 		routes.RegisterRoutes(router, queries)
 		router.Run()
 	} else {
